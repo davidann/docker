@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -256,4 +257,31 @@ func (img *Image) layer() (string, error) {
 		return "", err
 	}
 	return layerPath(root), nil
+}
+
+func (img *Image) GetSize() string {
+	var size, virtualSize int64
+	size = 0
+	virtualSize = 0
+
+	layer, err := img.layer()
+	if err != nil {
+		return "<invalid size>"
+	}
+	filepath.Walk(layer, func(path string, fileInfo os.FileInfo, err error) error {
+		size += (fileInfo.Size())
+		return nil
+	})
+
+	layers, err := img.layers()
+	if err != nil {
+		return "<invalid size>"
+	}
+	for _, layer := range layers {
+		filepath.Walk(layer, func(path string, fileInfo os.FileInfo, err error) error {
+			virtualSize += (fileInfo.Size())
+			return nil
+		})
+	}
+	return HumanSize(size) + " (virtual " + HumanSize(virtualSize) + ")"
 }
